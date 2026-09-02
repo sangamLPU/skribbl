@@ -109,6 +109,7 @@ io.on("connection", (socket) => {
     const { roomId, guestId, word } = payload;
     const room = roomManager.getRoom(roomId);
     if (!room || room.currentDrawerId !== guestId) return;
+    if (!room.players.find(p => p.playerId === guestId)) return;
     room.engine.selectWord(word);
   });
 
@@ -116,6 +117,7 @@ io.on("connection", (socket) => {
     const { roomId, guestId, operation } = payload;
     const room = roomManager.getRoom(roomId);
     if (!room || room.currentDrawerId !== guestId) return;
+    if (!room.players.find(p => p.playerId === guestId)) return;
     
     room.engine.addDrawOperation(operation);
     socket.to(roomId).emit("draw:operation", operation);
@@ -125,6 +127,7 @@ io.on("connection", (socket) => {
     const { roomId, guestId, operationId } = payload;
     const room = roomManager.getRoom(roomId);
     if (!room || room.currentDrawerId !== guestId) return;
+    if (!room.players.find(p => p.playerId === guestId)) return;
     room.engine.undoDrawOperation(operationId);
     socket.to(roomId).emit("draw:undo", operationId);
   });
@@ -133,6 +136,7 @@ io.on("connection", (socket) => {
     const { roomId, guestId } = payload;
     const room = roomManager.getRoom(roomId);
     if (!room || room.currentDrawerId !== guestId) return;
+    if (!room.players.find(p => p.playerId === guestId)) return;
     room.engine.clearDrawOperations();
     socket.to(roomId).emit("draw:clear");
   });
@@ -190,9 +194,14 @@ io.on("connection", (socket) => {
     
     room.removePlayer(targetId);
     io.to(roomId).emit("room:state", room.getPublicState());
-    // Find target socket and disconnect it from the room
+    
+    // Find target socket and completely evict from room
     const targetSocket = Array.from(io.sockets.sockets.values()).find(s => s.data.guestId === targetId && s.data.roomId === roomId);
-    if (targetSocket) targetSocket.leave(roomId);
+    if (targetSocket) {
+      targetSocket.emit("room:removed", { reason: "kicked" });
+      targetSocket.leave(roomId);
+      targetSocket.data.roomId = null; // Prevent subsequent room actions
+    }
   });
 
   socket.on("moderation:ban", (payload) => {
@@ -204,7 +213,11 @@ io.on("connection", (socket) => {
     io.to(roomId).emit("room:state", room.getPublicState());
     
     const targetSocket = Array.from(io.sockets.sockets.values()).find(s => s.data.guestId === targetId && s.data.roomId === roomId);
-    if (targetSocket) targetSocket.leave(roomId);
+    if (targetSocket) {
+      targetSocket.emit("room:removed", { reason: "banned" });
+      targetSocket.leave(roomId);
+      targetSocket.data.roomId = null;
+    }
   });
 
   socket.on("moderation:transferHost", (payload) => {

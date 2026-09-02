@@ -24,7 +24,7 @@ export function TimerDisplay({ endsAt }: { endsAt: number | null }) {
   if (!endsAt) return null;
 
   return (
-    <div className={`text-xl font-black ${timeLeft <= 10 ? 'text-red-500 animate-pulse' : 'text-gray-700'}`}>
+    <div className={`text-xl font-black ${timeLeft <= 10 ? 'text-red-600 animate-pulse' : 'text-gray-900'}`}>
       00:{timeLeft.toString().padStart(2, '0')}
     </div>
   );

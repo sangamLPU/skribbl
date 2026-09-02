@@ -69,12 +69,18 @@ export default function RoomPage() {
       setSecretWord("");
     });
 
+    socket.on("room:removed", (data: { reason: string }) => {
+      setError(`You were ${data.reason} from this room.`);
+      socket.disconnect(); // Prevent auto-reconnect shenanigans
+    });
+
     return () => {
       socket.off("room:state");
       socket.off("word:hint");
       socket.off("word:secret");
       socket.off("word:choices");
       socket.off("turn:ended");
+      socket.off("room:removed");
     };
   }, [roomId, guestId, username, avatar, router]);
 
@@ -124,7 +130,7 @@ export default function RoomPage() {
           <div className="flex justify-between items-center mb-4 pb-2 border-b">
             <h2 className="text-xl font-bold text-gray-800">Players ({roomState.players.length}/{roomState.settings.maxPlayers})</h2>
             {showMobilePlayers && (
-              <button onClick={() => setShowMobilePlayers(false)} className="md:hidden text-gray-500 font-bold p-2">✕</button>
+              <button onClick={() => setShowMobilePlayers(false)} className="md:hidden text-gray-700 font-bold p-2">✕</button>
             )}
           </div>
           <div className="space-y-3 overflow-y-auto">
@@ -137,7 +143,7 @@ export default function RoomPage() {
                     {p.playerId === guestId && <span className="text-xs bg-indigo-100 text-indigo-700 px-2 py-0.5 rounded-full">You</span>}
                     {p.isHost && <span className="text-xs bg-yellow-100 text-yellow-700 px-2 py-0.5 rounded-full">Host</span>}
                   </span>
-                  <span className="text-sm text-gray-500">Score: {p.score}</span>
+                  <span className="text-sm font-bold text-gray-700">Score: {p.score}</span>
                 </div>
                 {isHost && p.playerId !== guestId && (
                   <div className="ml-auto">
@@ -154,8 +160,8 @@ export default function RoomPage() {
           <div className="bg-white rounded-2xl shadow-sm border border-gray-200 p-6 text-center h-full">
             {roomState.phase === "LOBBY" ? (
               <>
-                <h1 className="text-3xl font-black text-indigo-600 mb-2">Room Code: {roomId}</h1>
-                <p className="text-gray-500 mb-6">Invite friends to join this room.</p>
+                <h1 className="text-3xl font-black text-indigo-700 mb-2">Room Code: {roomId}</h1>
+                <p className="text-gray-700 font-medium mb-6">Invite friends to join this room.</p>
                 <div className="flex flex-col gap-6">
                   <div className="bg-indigo-50 border border-indigo-100 rounded-xl p-6">
                     <h3 className="text-lg font-bold text-indigo-800 mb-4">Ready to Play?</h3>
@@ -170,13 +176,13 @@ export default function RoomPage() {
                         className={`w-full md:w-auto px-10 py-4 font-bold text-xl rounded-full transition-all ${
                           roomState.players.length >= 2 
                             ? "bg-yellow-400 hover:bg-yellow-300 text-yellow-900 shadow-[0_4px_14px_0_rgba(250,204,21,0.39)]"
-                            : "bg-gray-300 text-gray-500 cursor-not-allowed"
+                            : "bg-gray-300 text-gray-600 cursor-not-allowed"
                         }`}
                       >
                         {roomState.players.length < 2 ? "Need 2 players" : "Start Game"}
                       </button>
                     ) : (
-                      <p className="text-indigo-600 font-medium">Waiting for host to start...</p>
+                      <p className="text-indigo-800 font-bold">Waiting for host to start...</p>
                     )}
                   </div>
                   <RoomSettingsPanel roomId={roomId} guestId={guestId!} isHost={isHost} settings={roomState.settings} />
@@ -199,9 +205,9 @@ export default function RoomPage() {
                   </div>
                   <div className="flex items-center gap-2 md:gap-4">
                     <TimerDisplay endsAt={roomState.timerEndsAt} />
-                    <div className="text-lg md:text-2xl font-black tracking-widest">{roomState.currentDrawerId === guestId && secretWord ? secretWord.split('').join(' ') : wordHint}</div>
+                    <div className="text-lg md:text-2xl font-black tracking-widest text-gray-900">{roomState.currentDrawerId === guestId && secretWord ? secretWord.split('').join(' ') : wordHint}</div>
                   </div>
-                  <div className="font-bold text-gray-600 text-sm md:text-base text-right">
+                  <div className="font-bold text-indigo-900 text-sm md:text-base text-right">
                     {roomState.currentDrawerId === guestId ? "You are drawing!" : "Guess the word!"}
                   </div>
                 </div>
@@ -217,7 +223,7 @@ export default function RoomPage() {
                            {roomState.players.sort((a:any, b:any) => b.score - a.score).map((p:any, i:number) => (
                              <div key={p.playerId} className="bg-white p-4 rounded-xl flex items-center justify-between">
                                <div className="flex items-center gap-3">
-                                 <span className="font-black text-2xl text-gray-400">#{i + 1}</span>
+                                 <span className="font-black text-2xl text-gray-500">#{i + 1}</span>
                                  <Avatar config={p.avatar} size={40} />
                                  <span className="font-bold">{p.username}</span>
                                </div>

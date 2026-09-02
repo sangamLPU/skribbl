@@ -52,6 +52,8 @@ class Room {
             this.hostId = activePlayer.playerId;
             activePlayer.isHost = true;
         }
+        // Inform game engine to handle active turn consequences
+        this.engine.handlePlayerRemoved(playerId);
     }
     banPlayer(playerId, durationMinutes = 60) {
         this.removePlayer(playerId);

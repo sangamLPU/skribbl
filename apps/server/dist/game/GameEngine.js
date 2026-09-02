@@ -180,19 +180,39 @@ class GameEngine {
             const score = Math.floor(100 + (400 * (timeRemaining / maxTime)));
             player.score += score;
             // Check if everyone guessed correctly
-            const allGuessed = this.room.players.every(p => p.playerId === this.room.currentDrawerId || p.hasGuessedCorrectly);
-            if (allGuessed) {
-                this.endTurn();
-            }
-            else {
-                this.broadcastState();
-            }
+            this.checkAllGuessed();
             return true;
         }
         return false;
     }
-    endTurn() {
+    checkAllGuessed() {
         if (this.room.phase !== "DRAWING")
+            return;
+        // Check if every active player (who isn't the drawer) has guessed correctly
+        const allGuessed = this.room.players.every(p => p.playerId === this.room.currentDrawerId || p.hasGuessedCorrectly || p.isDisconnected);
+        // Only end early if there is at least one active guesser
+        const activeGuessers = this.room.players.filter(p => p.playerId !== this.room.currentDrawerId && !p.isDisconnected);
+        if (allGuessed && activeGuessers.length > 0) {
+            this.endTurn();
+        }
+        else {
+            this.broadcastState();
+        }
+    }
+    handlePlayerRemoved(playerId) {
+        // If the active drawer is kicked, immediately end their turn
+        if (this.room.currentDrawerId === playerId && (this.room.phase === "WORD_SELECTION" || this.room.phase === "DRAWING")) {
+            // Fast forward to turn results
+            this.endTurn();
+            return;
+        }
+        // If a guesser is kicked during drawing, we might need to end the turn early
+        if (this.room.phase === "DRAWING") {
+            this.checkAllGuessed();
+        }
+    }
+    endTurn() {
+        if (this.room.phase !== "DRAWING" && this.room.phase !== "WORD_SELECTION")
             return;
         this.clearHintTimers();
         // Broadcast real word to everyone

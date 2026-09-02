@@ -329,8 +329,8 @@ export function DrawingCanvas({ roomId, guestId, isDrawer }: DrawingCanvasProps)
             </div>
             
             <div className="flex items-center gap-1 shrink-0 ml-4">
-              <button onClick={handleUndo} disabled={operations.length === 0} className={`p-2 rounded-lg ${operations.length > 0 ? 'text-gray-700 hover:bg-gray-200' : 'text-gray-300'}`}><Undo size={18} /></button>
-              <button onClick={handleRedo} disabled={redoStack.length === 0} className={`p-2 rounded-lg ${redoStack.length > 0 ? 'text-gray-700 hover:bg-gray-200' : 'text-gray-300'}`}><Redo size={18} /></button>
+              <button onClick={handleUndo} disabled={operations.length === 0} className={`p-2 rounded-lg ${operations.length > 0 ? 'text-gray-700 hover:bg-gray-200' : 'text-gray-400'}`}><Undo size={18} /></button>
+              <button onClick={handleRedo} disabled={redoStack.length === 0} className={`p-2 rounded-lg ${redoStack.length > 0 ? 'text-gray-700 hover:bg-gray-200' : 'text-gray-400'}`}><Redo size={18} /></button>
               <button onClick={handleClear} className="p-2 rounded-lg text-red-500 hover:bg-red-50"><Trash2 size={18} /></button>
             </div>
           </div>

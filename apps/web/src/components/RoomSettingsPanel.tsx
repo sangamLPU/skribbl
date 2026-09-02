@@ -27,7 +27,7 @@ export function RoomSettingsPanel({ roomId, guestId, isHost, settings }: RoomSet
       <h3 className="font-bold text-gray-800 mb-4 text-left">Room Settings</h3>
       <div className="grid grid-cols-2 gap-4 text-left">
         <div>
-          <label className="block text-xs font-bold text-gray-500 mb-1">Draw Time</label>
+          <label className="block text-xs font-bold text-gray-700 mb-1">Draw Time</label>
           <select 
             disabled={!isHost}
             value={localSettings.drawTime} 
@@ -38,7 +38,7 @@ export function RoomSettingsPanel({ roomId, guestId, isHost, settings }: RoomSet
           </select>
         </div>
         <div>
-          <label className="block text-xs font-bold text-gray-500 mb-1">Rounds</label>
+          <label className="block text-xs font-bold text-gray-700 mb-1">Rounds</label>
           <select 
             disabled={!isHost}
             value={localSettings.rounds} 
@@ -49,7 +49,7 @@ export function RoomSettingsPanel({ roomId, guestId, isHost, settings }: RoomSet
           </select>
         </div>
         <div>
-          <label className="block text-xs font-bold text-gray-500 mb-1">Word Choices</label>
+          <label className="block text-xs font-bold text-gray-700 mb-1">Word Choices</label>
           <select 
             disabled={!isHost}
             value={localSettings.wordCount} 
@@ -60,7 +60,7 @@ export function RoomSettingsPanel({ roomId, guestId, isHost, settings }: RoomSet
           </select>
         </div>
         <div>
-          <label className="block text-xs font-bold text-gray-500 mb-1">Max Players</label>
+          <label className="block text-xs font-bold text-gray-700 mb-1">Max Players</label>
           <select 
             disabled={!isHost}
             value={localSettings.maxPlayers} 

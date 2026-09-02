@@ -50,7 +50,7 @@ export function ChatPanel({ roomId, guestId, username, isDrawer }: ChatPanelProp
       
       <div className="flex-grow p-4 overflow-y-auto flex flex-col gap-2">
         {messages.map((msg, i) => (
-          <div key={i} className={`text-sm ${msg.type === 'system' ? 'text-gray-500 italic' : msg.type === 'correct' ? 'text-green-600 font-bold bg-green-50 p-2 rounded-lg' : msg.type === 'close' ? 'text-yellow-600 font-bold' : 'text-gray-800'}`}>
+          <div key={i} className={`text-sm ${msg.type === 'system' ? 'text-gray-600 italic' : msg.type === 'correct' ? 'text-green-700 font-bold bg-green-50 p-2 rounded-lg' : msg.type === 'close' ? 'text-yellow-700 font-bold' : 'text-gray-900'}`}>
             {msg.type === 'player' && <span className="font-bold mr-2">{msg.senderName}:</span>}
             {msg.message}
           </div>
@@ -66,12 +66,12 @@ export function ChatPanel({ roomId, guestId, username, isDrawer }: ChatPanelProp
           onChange={(e) => setInput(e.target.value)}
           maxLength={100}
           disabled={isDrawer}
-          className={`flex-grow px-4 py-2 rounded-full border border-gray-300 focus:outline-none focus:ring-2 focus:ring-indigo-500 ${isDrawer ? 'bg-gray-100 text-gray-400 cursor-not-allowed' : ''}`}
+          className={`flex-grow px-4 py-2 rounded-full border border-gray-400 focus:outline-none focus:ring-2 focus:ring-indigo-500 placeholder-gray-500 font-medium ${isDrawer ? 'bg-gray-200 text-gray-700 cursor-not-allowed' : 'bg-white text-gray-900'}`}
         />
         <button 
           type="submit"
           disabled={isDrawer}
-          className={`p-2 text-white rounded-full transition ${isDrawer ? 'bg-indigo-300 cursor-not-allowed' : 'bg-indigo-600 hover:bg-indigo-700'}`}
+          className={`p-2 text-white rounded-full transition ${isDrawer ? 'bg-indigo-400 cursor-not-allowed' : 'bg-indigo-600 hover:bg-indigo-700'}`}
         >
           <SendHorizontal size={20} />
         </button>

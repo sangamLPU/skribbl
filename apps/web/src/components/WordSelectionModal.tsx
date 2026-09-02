@@ -21,8 +21,8 @@ export function WordSelectionModal({ roomId, guestId, choices, onSelected }: Wor
   return (
     <div className="absolute inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm rounded-2xl">
       <div className="bg-white p-8 rounded-3xl shadow-2xl max-w-lg w-full text-center transform scale-100 animate-in zoom-in-95 duration-200">
-        <h2 className="text-3xl font-black text-indigo-600 mb-2">Choose a word!</h2>
-        <p className="text-gray-500 mb-8">You are drawing this turn.</p>
+        <h2 className="text-3xl font-black text-indigo-700 mb-2">Choose a word!</h2>
+        <p className="text-gray-700 font-medium mb-8">You are drawing this turn.</p>
         
         <div className="flex flex-col gap-4">
           {choices.map((word) => (

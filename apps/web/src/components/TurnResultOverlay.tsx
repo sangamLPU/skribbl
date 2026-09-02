@@ -25,7 +25,7 @@ export function TurnResultOverlay() {
       <div className="bg-white p-10 rounded-3xl shadow-2xl text-center transform scale-100 animate-in zoom-in duration-300">
         <h2 className="text-3xl font-black text-gray-800 mb-2">The word was:</h2>
         <div className="text-5xl font-black text-green-500 mb-6 uppercase tracking-widest">{secretWord}</div>
-        <p className="text-gray-500 font-medium">Getting ready for the next turn...</p>
+        <p className="text-gray-600 font-medium">Getting ready for the next turn...</p>
       </div>
     </div>
   );
