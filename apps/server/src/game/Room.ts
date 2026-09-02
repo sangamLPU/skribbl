@@ -1,4 +1,4 @@
-import { RoomSettings, PublicRoomState, PlayerState, GamePhase, DEFAULT_ROOM_SETTINGS } from "shared";
+import { RoomSettings, PublicRoomState, PlayerState, GamePhase, RoomBan, DEFAULT_ROOM_SETTINGS } from "shared";
 import { Server } from "socket.io";
 import { GameEngine } from "./GameEngine";
 
@@ -6,6 +6,7 @@ export class Room {
   public id: string;
   public settings: RoomSettings;
   public players: PlayerState[] = [];
+  public bannedPlayers: RoomBan[] = [];
   public phase: GamePhase = "LOBBY";
   public hostId: string;
   public round: number = 0;
@@ -52,9 +53,32 @@ export class Room {
     
     // Host migration
     if (this.hostId === playerId && this.players.length > 0) {
-      this.hostId = this.players[0].playerId;
-      this.players[0].isHost = true;
+      // Find oldest active player
+      const activePlayer = this.players.find(p => !p.isDisconnected) || this.players[0];
+      this.hostId = activePlayer.playerId;
+      activePlayer.isHost = true;
     }
+  }
+
+  banPlayer(playerId: string, durationMinutes: number = 60) {
+    this.removePlayer(playerId);
+    this.bannedPlayers.push({
+      playerId,
+      expiresAt: Date.now() + durationMinutes * 60 * 1000
+    });
+  }
+
+  resetGame() {
+    this.engine.cleanup();
+    this.phase = "LOBBY";
+    this.round = 0;
+    this.currentDrawerId = null;
+    this.timerEndsAt = null;
+    this.engine.clearDrawOperations();
+    this.players.forEach(p => {
+      p.score = 0;
+      p.hasGuessedCorrectly = false;
+    });
   }
 
   markPlayerDisconnected(playerId: string) {

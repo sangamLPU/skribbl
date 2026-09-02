@@ -284,6 +284,14 @@ export class GameEngine {
     return this.drawOperations;
   }
 
+  public cleanup() {
+    if (this.stateTimer) {
+      clearTimeout(this.stateTimer);
+      this.stateTimer = null;
+    }
+    this.clearHintTimers();
+  }
+
   private broadcastState() {
     this.io.to(this.room.id).emit("room:state", this.room.getPublicState());
   }

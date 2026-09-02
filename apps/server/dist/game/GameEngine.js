@@ -250,6 +250,13 @@ class GameEngine {
     getDrawSnapshot() {
         return this.drawOperations;
     }
+    cleanup() {
+        if (this.stateTimer) {
+            clearTimeout(this.stateTimer);
+            this.stateTimer = null;
+        }
+        this.clearHintTimers();
+    }
     broadcastState() {
         this.io.to(this.room.id).emit("room:state", this.room.getPublicState());
     }

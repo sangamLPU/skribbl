@@ -8,6 +8,11 @@ export interface RoomSettings {
   customWordsOnly: boolean;
 }
 
+export interface RoomBan {
+  playerId: string;
+  expiresAt: number;
+}
+
 export type GamePhase = 
   | "LOBBY"
   | "STARTING"

@@ -67,6 +67,13 @@ io.on("connection", (socket) => {
                 callback({ error: "Room not found" });
             return;
         }
+        // Check if player is banned
+        const ban = room.bannedPlayers.find(b => b.playerId === playerId);
+        if (ban && ban.expiresAt > Date.now()) {
+            if (callback)
+                callback({ error: "You are banned from this room." });
+            return;
+        }
         try {
             room.addPlayer(playerId, username, avatar);
             socket.join(roomId);
@@ -165,6 +172,67 @@ io.on("connection", (socket) => {
             message,
             type: "player"
         });
+    });
+    socket.on("room:updateSettings", (payload) => {
+        const { roomId, guestId, settings } = payload;
+        const room = roomManager.getRoom(roomId);
+        if (!room || room.hostId !== guestId || room.phase !== "LOBBY")
+            return;
+        room.settings = { ...room.settings, ...settings };
+        io.to(roomId).emit("room:state", room.getPublicState());
+    });
+    socket.on("moderation:kick", (payload) => {
+        const { roomId, guestId, targetId } = payload;
+        const room = roomManager.getRoom(roomId);
+        if (!room || room.hostId !== guestId || guestId === targetId)
+            return;
+        room.removePlayer(targetId);
+        io.to(roomId).emit("room:state", room.getPublicState());
+        // Find target socket and disconnect it from the room
+        const targetSocket = Array.from(io.sockets.sockets.values()).find(s => s.data.guestId === targetId && s.data.roomId === roomId);
+        if (targetSocket)
+            targetSocket.leave(roomId);
+    });
+    socket.on("moderation:ban", (payload) => {
+        const { roomId, guestId, targetId } = payload;
+        const room = roomManager.getRoom(roomId);
+        if (!room || room.hostId !== guestId || guestId === targetId)
+            return;
+        room.banPlayer(targetId);
+        io.to(roomId).emit("room:state", room.getPublicState());
+        const targetSocket = Array.from(io.sockets.sockets.values()).find(s => s.data.guestId === targetId && s.data.roomId === roomId);
+        if (targetSocket)
+            targetSocket.leave(roomId);
+    });
+    socket.on("moderation:transferHost", (payload) => {
+        const { roomId, guestId, targetId } = payload;
+        const room = roomManager.getRoom(roomId);
+        if (!room || room.hostId !== guestId || guestId === targetId)
+            return;
+        const newHost = room.players.find(p => p.playerId === targetId);
+        const oldHost = room.players.find(p => p.playerId === guestId);
+        if (newHost && oldHost) {
+            room.hostId = targetId;
+            newHost.isHost = true;
+            oldHost.isHost = false;
+            io.to(roomId).emit("room:state", room.getPublicState());
+        }
+    });
+    socket.on("game:cancel", (payload) => {
+        const { roomId, guestId } = payload;
+        const room = roomManager.getRoom(roomId);
+        if (!room || room.hostId !== guestId)
+            return;
+        room.resetGame();
+        io.to(roomId).emit("room:state", room.getPublicState());
+    });
+    socket.on("game:restart", (payload) => {
+        const { roomId, guestId } = payload;
+        const room = roomManager.getRoom(roomId);
+        if (!room || room.hostId !== guestId || room.phase !== "GAME_RESULTS")
+            return;
+        room.resetGame();
+        room.engine.startGame();
     });
     socket.on("disconnect", () => {
         console.log(`User disconnected: ${socket.id}`);

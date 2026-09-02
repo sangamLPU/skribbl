@@ -10,6 +10,8 @@ import { WordSelectionModal } from "@/components/WordSelectionModal";
 import { ChatPanel } from "@/components/ChatPanel";
 import { TimerDisplay } from "@/components/TimerDisplay";
 import { TurnResultOverlay } from "@/components/TurnResultOverlay";
+import { RoomSettingsPanel } from "@/components/RoomSettingsPanel";
+import { PlayerActionMenu } from "@/components/PlayerActionMenu";
 
 export default function RoomPage() {
   const params = useParams();
@@ -76,6 +78,16 @@ export default function RoomPage() {
     };
   }, [roomId, guestId, username, avatar, router]);
 
+  const handleCancelMatch = () => {
+    if (confirm("Are you sure you want to cancel the match and return to the lobby?")) {
+      getSocket().emit("game:cancel", { roomId, guestId });
+    }
+  };
+
+  const handleRestartMatch = () => {
+    getSocket().emit("game:restart", { roomId, guestId });
+  };
+
   if (error) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-indigo-500 to-pink-500 flex items-center justify-center p-4">
@@ -127,6 +139,11 @@ export default function RoomPage() {
                   </span>
                   <span className="text-sm text-gray-500">Score: {p.score}</span>
                 </div>
+                {isHost && p.playerId !== guestId && (
+                  <div className="ml-auto">
+                    <PlayerActionMenu roomId={roomId} guestId={guestId!} targetId={p.playerId} />
+                  </div>
+                )}
               </div>
             ))}
           </div>
@@ -139,27 +156,30 @@ export default function RoomPage() {
               <>
                 <h1 className="text-3xl font-black text-indigo-600 mb-2">Room Code: {roomId}</h1>
                 <p className="text-gray-500 mb-6">Invite friends to join this room.</p>
-                <div className="bg-indigo-50 border border-indigo-100 rounded-xl p-6">
-                  <h3 className="text-lg font-bold text-indigo-800 mb-4">Waiting for players...</h3>
-                  
-                  {isHost ? (
-                    <button 
-                      onClick={() => {
-                        const socket = getSocket();
-                        socket.emit("game:start", { roomId, guestId });
-                      }}
-                      disabled={roomState.players.length < 2}
-                      className={`w-full md:w-auto px-10 py-4 font-bold text-xl rounded-full transition-all ${
-                        roomState.players.length >= 2 
-                          ? "bg-yellow-400 hover:bg-yellow-300 text-yellow-900 shadow-[0_4px_14px_0_rgba(250,204,21,0.39)]"
-                          : "bg-gray-300 text-gray-500 cursor-not-allowed"
-                      }`}
-                    >
-                      {roomState.players.length < 2 ? "Need 2 players" : "Start Game"}
-                    </button>
-                  ) : (
-                    <p className="text-indigo-600 font-medium">Waiting for host to start...</p>
-                  )}
+                <div className="flex flex-col gap-6">
+                  <div className="bg-indigo-50 border border-indigo-100 rounded-xl p-6">
+                    <h3 className="text-lg font-bold text-indigo-800 mb-4">Ready to Play?</h3>
+                    
+                    {isHost ? (
+                      <button 
+                        onClick={() => {
+                          const socket = getSocket();
+                          socket.emit("game:start", { roomId, guestId });
+                        }}
+                        disabled={roomState.players.length < 2}
+                        className={`w-full md:w-auto px-10 py-4 font-bold text-xl rounded-full transition-all ${
+                          roomState.players.length >= 2 
+                            ? "bg-yellow-400 hover:bg-yellow-300 text-yellow-900 shadow-[0_4px_14px_0_rgba(250,204,21,0.39)]"
+                            : "bg-gray-300 text-gray-500 cursor-not-allowed"
+                        }`}
+                      >
+                        {roomState.players.length < 2 ? "Need 2 players" : "Start Game"}
+                      </button>
+                    ) : (
+                      <p className="text-indigo-600 font-medium">Waiting for host to start...</p>
+                    )}
+                  </div>
+                  <RoomSettingsPanel roomId={roomId} guestId={guestId!} isHost={isHost} settings={roomState.settings} />
                 </div>
               </>
             ) : (
@@ -170,7 +190,12 @@ export default function RoomPage() {
                     <button onClick={() => setShowMobilePlayers(true)} className="md:hidden text-xs bg-indigo-100 text-indigo-700 px-2 py-1 rounded-full font-bold">
                       👥 {roomState.players.length}
                     </button>
-                    <div className="font-bold text-indigo-600 hidden sm:block">Round {roomState.round}/{roomState.settings.rounds}</div>
+                    <div className="font-bold text-indigo-600 hidden sm:block flex items-center gap-2">
+                      Round {roomState.round}/{roomState.settings.rounds}
+                      {isHost && (
+                        <button onClick={handleCancelMatch} className="ml-2 text-xs bg-red-100 text-red-600 hover:bg-red-200 px-2 py-1 rounded-md font-bold transition">Cancel Match</button>
+                      )}
+                    </div>
                   </div>
                   <div className="flex items-center gap-2 md:gap-4">
                     <TimerDisplay endsAt={roomState.timerEndsAt} />
@@ -202,10 +227,7 @@ export default function RoomPage() {
                         </div>
                         {isHost && (
                           <button 
-                            onClick={() => {
-                              const socket = getSocket();
-                              socket.emit("game:start", { roomId, guestId });
-                            }}
+                            onClick={handleRestartMatch}
                             className="mt-8 px-8 py-3 bg-indigo-600 hover:bg-indigo-700 text-white font-bold rounded-full"
                           >
                             Play Again

@@ -7,6 +7,10 @@ export interface RoomSettings {
     language: string;
     customWordsOnly: boolean;
 }
+export interface RoomBan {
+    playerId: string;
+    expiresAt: number;
+}
 export type GamePhase = "LOBBY" | "STARTING" | "WORD_SELECTION" | "DRAWING" | "TURN_RESULTS" | "ROUND_RESULTS" | "GAME_RESULTS" | "ENDED";
 export interface PublicRoomState {
     roomId: string;

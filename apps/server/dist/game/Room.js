@@ -7,6 +7,7 @@ class Room {
     id;
     settings;
     players = [];
+    bannedPlayers = [];
     phase = "LOBBY";
     hostId;
     round = 0;
@@ -46,9 +47,30 @@ class Room {
         this.players = this.players.filter(p => p.playerId !== playerId);
         // Host migration
         if (this.hostId === playerId && this.players.length > 0) {
-            this.hostId = this.players[0].playerId;
-            this.players[0].isHost = true;
+            // Find oldest active player
+            const activePlayer = this.players.find(p => !p.isDisconnected) || this.players[0];
+            this.hostId = activePlayer.playerId;
+            activePlayer.isHost = true;
         }
+    }
+    banPlayer(playerId, durationMinutes = 60) {
+        this.removePlayer(playerId);
+        this.bannedPlayers.push({
+            playerId,
+            expiresAt: Date.now() + durationMinutes * 60 * 1000
+        });
+    }
+    resetGame() {
+        this.engine.cleanup();
+        this.phase = "LOBBY";
+        this.round = 0;
+        this.currentDrawerId = null;
+        this.timerEndsAt = null;
+        this.engine.clearDrawOperations();
+        this.players.forEach(p => {
+            p.score = 0;
+            p.hasGuessedCorrectly = false;
+        });
     }
     markPlayerDisconnected(playerId) {
         const player = this.players.find(p => p.playerId === playerId);
