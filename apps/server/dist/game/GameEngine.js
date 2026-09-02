@@ -37,17 +37,17 @@ class GameEngine {
     }
     transitionTo(phase) {
         this.room.phase = phase;
+        this.turnId = Math.random().toString(36).substring(2, 10); // Generate unique ID for EVERY phase
         if (this.stateTimer) {
             clearTimeout(this.stateTimer);
             this.stateTimer = null;
         }
         switch (phase) {
             case "STARTING":
-                this.turnId = Math.random().toString(36).substring(2, 10); // Generate turn ID for STARTING phase
                 this.room.timerEndsAt = Date.now() + 5000;
                 const sTurnId = this.turnId;
                 this.stateTimer = setTimeout(() => {
-                    if (this.turnId !== sTurnId || this.room.phase !== "STARTING")
+                    if (this.turnId !== sTurnId)
                         return;
                     this.beginTurn();
                 }, 5000);
@@ -59,7 +59,7 @@ class GameEngine {
                 this.io.to(this.room.currentDrawerId).emit("word:choices", this.wordChoices);
                 const wsTurnId = this.turnId;
                 this.stateTimer = setTimeout(() => {
-                    if (this.turnId !== wsTurnId || this.room.phase !== "WORD_SELECTION")
+                    if (this.turnId !== wsTurnId)
                         return;
                     // Auto pick if timeout
                     this.selectWord(this.wordChoices[0]);
@@ -72,7 +72,7 @@ class GameEngine {
                 this.scheduleHints();
                 const dTurnId = this.turnId;
                 this.stateTimer = setTimeout(() => {
-                    if (this.turnId !== dTurnId || this.room.phase !== "DRAWING")
+                    if (this.turnId !== dTurnId)
                         return;
                     this.endTurn();
                 }, this.room.settings.drawTime * 1000);
@@ -81,7 +81,7 @@ class GameEngine {
                 this.room.timerEndsAt = Date.now() + 5000;
                 const trTurnId = this.turnId;
                 this.stateTimer = setTimeout(() => {
-                    if (this.turnId !== trTurnId || this.room.phase !== "TURN_RESULTS")
+                    if (this.turnId !== trTurnId)
                         return;
                     this.nextTurn();
                 }, 5000);
@@ -90,7 +90,7 @@ class GameEngine {
                 this.room.timerEndsAt = Date.now() + 5000;
                 const rrTurnId = this.turnId;
                 this.stateTimer = setTimeout(() => {
-                    if (this.turnId !== rrTurnId || this.room.phase !== "ROUND_RESULTS")
+                    if (this.turnId !== rrTurnId)
                         return;
                     this.room.round++;
                     this.beginTurn();
@@ -103,7 +103,6 @@ class GameEngine {
         this.broadcastState();
     }
     beginTurn() {
-        this.turnId = Math.random().toString(36).substring(2, 10); // Generate new unique turn ID
         this.room.currentDrawerId = this.turnOrder[this.currentTurnIndex];
         this.transitionTo("WORD_SELECTION");
     }
