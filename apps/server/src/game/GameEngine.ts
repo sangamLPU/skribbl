@@ -1,6 +1,6 @@
 import { Room } from "./Room";
 import { Server } from "socket.io";
-import { GamePhase, WordGenerator } from "shared";
+import { GamePhase, WordGenerator, DrawOperation } from "shared";
 
 export class GameEngine {
   private room: Room;
@@ -18,6 +18,9 @@ export class GameEngine {
   private turnOrder: string[] = [];
   private currentTurnIndex: number = 0;
   private turnId: string = "";
+  
+  // Drawing state
+  private drawOperations: DrawOperation[] = [];
 
   constructor(room: Room, io: Server) {
     this.room = room;
@@ -33,7 +36,13 @@ export class GameEngine {
     }
     this.room.round = 1;
     this.turnOrder = this.room.players.map(p => p.playerId);
-    // Shuffle turn order ideally, but keeping it simple for now
+    
+    // Fisher-Yates shuffle for random turn order
+    for (let i = this.turnOrder.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [this.turnOrder[i], this.turnOrder[j]] = [this.turnOrder[j], this.turnOrder[i]];
+    }
+    
     this.currentTurnIndex = 0;
     
     // Reset scores
@@ -119,6 +128,7 @@ export class GameEngine {
   }
 
   private beginTurn() {
+    this.drawOperations = []; // Reset drawing history
     this.room.currentDrawerId = this.turnOrder[this.currentTurnIndex];
     this.transitionTo("WORD_SELECTION");
   }
@@ -218,17 +228,60 @@ export class GameEngine {
   }
 
   private nextTurn() {
-    this.currentTurnIndex++;
-    if (this.currentTurnIndex >= this.turnOrder.length) {
-      this.currentTurnIndex = 0;
-      if (this.room.round >= this.room.settings.rounds) {
-        this.transitionTo("GAME_RESULTS");
-      } else {
-        this.transitionTo("ROUND_RESULTS");
+    // Find the next active player
+    let foundNext = false;
+    let attempts = 0;
+    
+    while (!foundNext && attempts < this.turnOrder.length) {
+      this.currentTurnIndex++;
+      attempts++;
+      
+      if (this.currentTurnIndex >= this.turnOrder.length) {
+        this.currentTurnIndex = 0;
+        
+        // Loop back to start means next round!
+        if (this.room.round >= this.room.settings.rounds) {
+          this.transitionTo("GAME_RESULTS");
+          return;
+        } else {
+          this.transitionTo("ROUND_RESULTS");
+          return;
+        }
       }
-    } else {
-      this.beginTurn();
+      
+      const nextPlayerId = this.turnOrder[this.currentTurnIndex];
+      const player = this.room.players.find(p => p.playerId === nextPlayerId);
+      
+      if (player && !player.isDisconnected) {
+        foundNext = true;
+      }
     }
+    
+    if (foundNext) {
+      this.beginTurn();
+    } else {
+      // Everyone left or disconnected
+      this.transitionTo("GAME_RESULTS");
+    }
+  }
+
+  public addDrawOperation(op: DrawOperation) {
+    if (this.room.phase !== "DRAWING") return;
+    this.drawOperations.push(op);
+  }
+
+  public undoDrawOperation(opId: string) {
+    if (this.room.phase !== "DRAWING") return;
+    this.drawOperations = this.drawOperations.filter(o => o.id !== opId);
+  }
+
+  public clearDrawOperations() {
+    if (this.room.phase !== "DRAWING") return;
+    this.drawOperations = [];
+  }
+
+  public getDrawSnapshot(): DrawOperation[] {
+    return this.drawOperations;
   }
 
   private broadcastState() {

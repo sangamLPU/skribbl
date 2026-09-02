@@ -16,6 +16,8 @@ class GameEngine {
     turnOrder = [];
     currentTurnIndex = 0;
     turnId = "";
+    // Drawing state
+    drawOperations = [];
     constructor(room, io) {
         this.room = room;
         this.io = io;
@@ -29,7 +31,11 @@ class GameEngine {
         }
         this.room.round = 1;
         this.turnOrder = this.room.players.map(p => p.playerId);
-        // Shuffle turn order ideally, but keeping it simple for now
+        // Fisher-Yates shuffle for random turn order
+        for (let i = this.turnOrder.length - 1; i > 0; i--) {
+            const j = Math.floor(Math.random() * (i + 1));
+            [this.turnOrder[i], this.turnOrder[j]] = [this.turnOrder[j], this.turnOrder[i]];
+        }
         this.currentTurnIndex = 0;
         // Reset scores
         this.room.players.forEach(p => { p.score = 0; });
@@ -103,6 +109,7 @@ class GameEngine {
         this.broadcastState();
     }
     beginTurn() {
+        this.drawOperations = []; // Reset drawing history
         this.room.currentDrawerId = this.turnOrder[this.currentTurnIndex];
         this.transitionTo("WORD_SELECTION");
     }
@@ -193,19 +200,55 @@ class GameEngine {
         this.transitionTo("TURN_RESULTS");
     }
     nextTurn() {
-        this.currentTurnIndex++;
-        if (this.currentTurnIndex >= this.turnOrder.length) {
-            this.currentTurnIndex = 0;
-            if (this.room.round >= this.room.settings.rounds) {
-                this.transitionTo("GAME_RESULTS");
+        // Find the next active player
+        let foundNext = false;
+        let attempts = 0;
+        while (!foundNext && attempts < this.turnOrder.length) {
+            this.currentTurnIndex++;
+            attempts++;
+            if (this.currentTurnIndex >= this.turnOrder.length) {
+                this.currentTurnIndex = 0;
+                // Loop back to start means next round!
+                if (this.room.round >= this.room.settings.rounds) {
+                    this.transitionTo("GAME_RESULTS");
+                    return;
+                }
+                else {
+                    this.transitionTo("ROUND_RESULTS");
+                    return;
+                }
             }
-            else {
-                this.transitionTo("ROUND_RESULTS");
+            const nextPlayerId = this.turnOrder[this.currentTurnIndex];
+            const player = this.room.players.find(p => p.playerId === nextPlayerId);
+            if (player && !player.isDisconnected) {
+                foundNext = true;
             }
         }
-        else {
+        if (foundNext) {
             this.beginTurn();
         }
+        else {
+            // Everyone left or disconnected
+            this.transitionTo("GAME_RESULTS");
+        }
+    }
+    addDrawOperation(op) {
+        if (this.room.phase !== "DRAWING")
+            return;
+        this.drawOperations.push(op);
+    }
+    undoDrawOperation(opId) {
+        if (this.room.phase !== "DRAWING")
+            return;
+        this.drawOperations = this.drawOperations.filter(o => o.id !== opId);
+    }
+    clearDrawOperations() {
+        if (this.room.phase !== "DRAWING")
+            return;
+        this.drawOperations = [];
+    }
+    getDrawSnapshot() {
+        return this.drawOperations;
     }
     broadcastState() {
         this.io.to(this.room.id).emit("room:state", this.room.getPublicState());

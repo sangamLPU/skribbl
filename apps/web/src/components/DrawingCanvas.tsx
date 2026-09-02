@@ -24,8 +24,11 @@ const BRUSH_SIZES = [2, 5, 10, 20, 30];
 const genId = () => Math.random().toString(36).substring(2, 9);
 
 export function DrawingCanvas({ roomId, guestId, isDrawer }: DrawingCanvasProps) {
-  const canvasRef = useRef<HTMLCanvasElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
+  
+  // Dual-canvas architecture
+  const historyCanvasRef = useRef<HTMLCanvasElement>(null);
+  const activeCanvasRef = useRef<HTMLCanvasElement>(null);
   
   const [color, setColor] = useState("#000000");
   const [brushSize, setBrushSize] = useState(5);
@@ -40,9 +43,8 @@ export function DrawingCanvas({ roomId, guestId, isDrawer }: DrawingCanvasProps)
   const activeOpRef = useRef<DrawOperation | null>(null);
   const isDrawingRef = useRef(false);
 
-  // Re-render everything from history
-  const renderHistory = useCallback((ops: DrawOperation[], ctx: CanvasRenderingContext2D, width: number, height: number) => {
-    ctx.clearRect(0, 0, width, height);
+  // Core render function
+  const renderOperations = useCallback((ops: DrawOperation[], ctx: CanvasRenderingContext2D, width: number, height: number) => {
     ctx.lineCap = "round";
     ctx.lineJoin = "round";
 
@@ -93,38 +95,56 @@ export function DrawingCanvas({ roomId, guestId, isDrawer }: DrawingCanvasProps)
     }
   }, []);
 
-  const redraw = useCallback(() => {
-    if (!canvasRef.current) return;
-    const ctx = canvasRef.current.getContext("2d");
+  const redrawHistory = useCallback(() => {
+    const canvas = historyCanvasRef.current;
+    if (!canvas) return;
+    const ctx = canvas.getContext("2d");
     if (!ctx) return;
     
-    // Render all confirmed operations
-    renderHistory(operations, ctx, canvasRef.current.width, canvasRef.current.height);
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    renderOperations(operations, ctx, canvas.width, canvas.height);
+  }, [operations, renderOperations]);
+
+  const redrawActive = useCallback(() => {
+    const canvas = activeCanvasRef.current;
+    if (!canvas) return;
+    const ctx = canvas.getContext("2d");
+    if (!ctx) return;
     
-    // Render the active operation currently being drawn
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
     if (activeOpRef.current) {
-      renderHistory([activeOpRef.current], ctx, canvasRef.current.width, canvasRef.current.height);
+      renderOperations([activeOpRef.current], ctx, canvas.width, canvas.height);
     }
-  }, [operations, renderHistory]);
+  }, [renderOperations]);
 
-  // Handle window resizing
+  // Handle Resize via ResizeObserver (only triggers when DOM actually changes size)
   useEffect(() => {
-    const handleResize = () => {
-      if (containerRef.current && canvasRef.current) {
-        canvasRef.current.width = containerRef.current.clientWidth;
-        canvasRef.current.height = containerRef.current.clientHeight;
-        redraw();
+    if (!containerRef.current || !historyCanvasRef.current || !activeCanvasRef.current) return;
+    
+    const observer = new ResizeObserver((entries) => {
+      for (const entry of entries) {
+        const { width, height } = entry.contentRect;
+        // Resize history canvas
+        historyCanvasRef.current!.width = width;
+        historyCanvasRef.current!.height = height;
+        // Resize active canvas
+        activeCanvasRef.current!.width = width;
+        activeCanvasRef.current!.height = height;
+        
+        // Changing width/height wipes the canvas, so we must redraw
+        redrawHistory();
       }
-    };
-    handleResize();
-    window.addEventListener("resize", handleResize);
-    return () => window.removeEventListener("resize", handleResize);
-  }, [redraw]);
+    });
+    
+    observer.observe(containerRef.current);
+    
+    return () => observer.disconnect();
+  }, [redrawHistory]);
 
-  // Re-render when operations change
+  // Re-render history only when committed operations change
   useEffect(() => {
-    redraw();
-  }, [operations, redraw]);
+    redrawHistory();
+  }, [operations, redrawHistory]);
 
   // Network synchronization
   useEffect(() => {
@@ -143,34 +163,32 @@ export function DrawingCanvas({ roomId, guestId, isDrawer }: DrawingCanvasProps)
       setRedoStack([]);
     });
 
+    socket.on("draw:snapshot", (snapshot: DrawOperation[]) => {
+      setOperations(snapshot);
+      setRedoStack([]);
+    });
+
     return () => {
       socket.off("draw:operation");
       socket.off("draw:undo");
       socket.off("draw:clear");
+      socket.off("draw:snapshot");
     };
   }, []);
 
-  const getCoordinates = (e: React.MouseEvent | React.TouchEvent): Point => {
-    if (!canvasRef.current) return { x: 0, y: 0 };
-    const rect = canvasRef.current.getBoundingClientRect();
-    let clientX, clientY;
-
-    if ('touches' in e) {
-      clientX = e.touches[0].clientX;
-      clientY = e.touches[0].clientY;
-    } else {
-      clientX = (e as React.MouseEvent).clientX;
-      clientY = (e as React.MouseEvent).clientY;
-    }
-
+  const getCoordinates = (e: React.PointerEvent): Point => {
+    if (!activeCanvasRef.current) return { x: 0, y: 0 };
+    const rect = activeCanvasRef.current.getBoundingClientRect();
     return {
-      x: (clientX - rect.left) / rect.width,
-      y: (clientY - rect.top) / rect.height
+      x: (e.clientX - rect.left) / rect.width,
+      y: (e.clientY - rect.top) / rect.height
     };
   };
 
-  const handleStart = (e: React.MouseEvent | React.TouchEvent) => {
+  const handlePointerDown = (e: React.PointerEvent) => {
     if (!isDrawer) return;
+    activeCanvasRef.current?.setPointerCapture(e.pointerId);
+    
     const pt = getCoordinates(e);
     isDrawingRef.current = true;
     
@@ -199,9 +217,11 @@ export function DrawingCanvas({ roomId, guestId, isDrawer }: DrawingCanvasProps)
       commitOperation(op);
       isDrawingRef.current = false;
     }
+    
+    requestAnimationFrame(redrawActive);
   };
 
-  const handleMove = (e: React.MouseEvent | React.TouchEvent) => {
+  const handlePointerMove = (e: React.PointerEvent) => {
     if (!isDrawer || !isDrawingRef.current || !activeOpRef.current) return;
     
     const pt = getCoordinates(e);
@@ -212,8 +232,7 @@ export function DrawingCanvas({ roomId, guestId, isDrawer }: DrawingCanvasProps)
       activeOpRef.current.end = pt;
     }
     
-    // Request animation frame for smooth local rendering
-    requestAnimationFrame(redraw);
+    requestAnimationFrame(redrawActive);
   };
 
   const commitOperation = (op: DrawOperation) => {
@@ -224,13 +243,15 @@ export function DrawingCanvas({ roomId, guestId, isDrawer }: DrawingCanvasProps)
     socket.emit("draw:operation", { roomId, guestId, operation: op });
   };
 
-  const handleEnd = () => {
+  const handlePointerUp = (e: React.PointerEvent) => {
     if (!isDrawer || !isDrawingRef.current) return;
+    activeCanvasRef.current?.releasePointerCapture(e.pointerId);
     isDrawingRef.current = false;
     
     if (activeOpRef.current) {
       commitOperation(activeOpRef.current);
       activeOpRef.current = null;
+      requestAnimationFrame(redrawActive); // Clears the active layer since it's now null
     }
   };
 
@@ -270,19 +291,24 @@ export function DrawingCanvas({ roomId, guestId, isDrawer }: DrawingCanvasProps)
         className="flex-grow w-full relative cursor-crosshair"
         style={{ touchAction: 'none' }} // Crucial for preventing mobile scroll
       >
+        {/* Background Canvas: Contains committed history */}
         <canvas
-          ref={canvasRef}
-          className="absolute top-0 left-0 w-full h-full bg-white"
-          onMouseDown={handleStart}
-          onMouseMove={handleMove}
-          onMouseUp={handleEnd}
-          onMouseLeave={handleEnd}
-          onTouchStart={handleStart}
-          onTouchMove={handleMove}
-          onTouchEnd={handleEnd}
+          ref={historyCanvasRef}
+          className="absolute top-0 left-0 w-full h-full bg-white pointer-events-none"
+        />
+        
+        {/* Foreground Canvas: Receives pointer events and renders the active stroke */}
+        <canvas
+          ref={activeCanvasRef}
+          className="absolute top-0 left-0 w-full h-full bg-transparent"
+          onPointerDown={handlePointerDown}
+          onPointerMove={handlePointerMove}
+          onPointerUp={handlePointerUp}
+          onPointerLeave={handlePointerUp}
+          onPointerCancel={handlePointerUp}
         />
         {!isDrawer && (
-          <div className="absolute inset-0 z-10" style={{ cursor: 'default' }} />
+          <div className="absolute inset-0 z-10 bg-transparent" style={{ cursor: 'default' }} />
         )}
       </div>
 

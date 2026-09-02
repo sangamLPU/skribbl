@@ -73,6 +73,10 @@ io.on("connection", (socket) => {
             socket.join(playerId); // Join a personal room for direct messages
             socket.data = { roomId, guestId: playerId };
             io.to(roomId).emit("room:state", room.getPublicState());
+            // If joining during a phase with drawings, send the current snapshot to the new player
+            if (room.phase === "DRAWING" || room.phase === "TURN_RESULTS" || room.phase === "WORD_SELECTION") {
+                socket.emit("draw:snapshot", room.engine.getDrawSnapshot());
+            }
             if (callback)
                 callback({ success: true, room: room.getPublicState() });
         }
@@ -110,8 +114,7 @@ io.on("connection", (socket) => {
         const room = roomManager.getRoom(roomId);
         if (!room || room.currentDrawerId !== guestId)
             return;
-        // In a real robust implementation, the server would keep track of the drawing history here.
-        // For this implementation, we rely on the drawer's client state as the master history.
+        room.engine.addDrawOperation(operation);
         socket.to(roomId).emit("draw:operation", operation);
     });
     socket.on("draw:undo", (payload) => {
@@ -119,6 +122,7 @@ io.on("connection", (socket) => {
         const room = roomManager.getRoom(roomId);
         if (!room || room.currentDrawerId !== guestId)
             return;
+        room.engine.undoDrawOperation(operationId);
         socket.to(roomId).emit("draw:undo", operationId);
     });
     socket.on("draw:clear", (payload) => {
@@ -126,6 +130,7 @@ io.on("connection", (socket) => {
         const room = roomManager.getRoom(roomId);
         if (!room || room.currentDrawerId !== guestId)
             return;
+        room.engine.clearDrawOperations();
         socket.to(roomId).emit("draw:clear");
     });
     socket.on("chat:send", (payload) => {
