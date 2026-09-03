@@ -71,3 +71,25 @@ export interface ChatMessage {
     message: string;
     type: "player" | "system" | "correct" | "close" | "join" | "leave";
 }
+export interface TurnResultPlayer {
+    playerId: string;
+    username: string;
+    scoreEarned: number;
+    totalScore: number;
+    guessedCorrectly: boolean;
+}
+export interface TurnResultPayload {
+    turnId: string;
+    drawerId: string;
+    wordDisplay: string;
+    players: TurnResultPlayer[];
+}
+export interface ReactionPayload {
+    turnId: string;
+    reaction: "like" | "dislike" | null;
+}
+export interface ReactionTotals {
+    turnId: string;
+    likes: number;
+    dislikes: number;
+}

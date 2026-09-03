@@ -148,6 +148,13 @@ io.on("connection", (socket) => {
         room.engine.clearDrawOperations();
         socket.to(roomId).emit("draw:clear");
     });
+    socket.on("drawing:reaction", (payload) => {
+        const { roomId, guestId, reaction } = payload;
+        const room = roomManager.getRoom(roomId);
+        if (!room)
+            return;
+        room.engine.handleReaction(guestId, reaction);
+    });
     socket.on("chat:send", (payload) => {
         const { roomId, guestId, message } = payload;
         const room = roomManager.getRoom(roomId);

@@ -1,0 +1,979 @@
+# ScribbleVerse Word Library
+# Source: user-supplied word list.
+# Format:
+#   [single:11]  -> single-word entries grouped by letter count
+#   [phrase:3,3] -> multi-word entries grouped by letters per word
+#   [general]    -> general/default pool
+#
+# The entries below preserve the supplied wording. Entries ending in "?"
+# are kept exactly as supplied. Duplicate identical entries are listed once
+# within a section only where they were exact duplicates.
+
+[single:11]
+Caterpillar
+Cauliflower
+Cheerleader
+Comfortable
+Electrician
+Electricity
+Firecracker
+Firefighter
+Grandfather
+Grandmother
+Grasshopper
+Gravedigger
+Hibernation
+Highlighter
+Hummingbird
+Imagination
+Marshmallow
+Motherboard
+Netherlands
+Observatory
+Playstation
+Pterodactyl
+Screwdriver
+Stegosaurus
+Supermarket
+Temperature
+Thermometer
+Underground
+Underweight
+Uninhabited
+Wheelbarrow
+
+[single:12]
+Cheeseburger
+Flamethrower
+Frankenstein
+Intersection
+Kindergarten
+Neighborhood
+Notification
+Photographer
+Receptionist
+Relationship
+Sledgehammer
+Skateboarder
+Thunderstorm
+Velociraptor
+Veterinarian
+
+[single:13]
+Advertisement
+Archaeologist
+Brachiosaurus
+Constellation
+Defibrillator
+Demonstration
+Reincarnation
+
+[single:14]
+Multiplication
+
+[single:15]
+Procrastination
+
+[phrase:2,7]
+Ed sheeran
+
+[phrase:3,3]
+Bed bug
+Big ben
+Bow tie
+Hip hop
+Hot dog
+Ice age
+Jet ski
+Red sea
+Tea bag
+Tom cat
+Top hat
+
+[phrase:3,4]
+Bus stop
+Car wash
+Gas mask
+Hay bale
+Jet pack
+Mr. bean
+New year
+New york
+Pet food
+Pet shop?
+Sea lion
+Six pack
+Ski jump
+Ski lift
+The rock
+Van gogh
+
+[phrase:3,5]
+Bed sheet
+Bug spray
+Cat woman
+Dr. seuss
+Hot sauce
+Ice cream
+Las vegas
+Red panda
+Taj mahal
+Tow truck
+
+[phrase:3,6]
+Bus driver
+Cab driver
+Can opener
+Dr. watson
+Red carpet
+Sea turtle
+Sea urchin
+Vin diesel
+
+[phrase:3,7]
+Bus station
+Fly swatter
+Gas station
+Ice fishing
+New zealand
+The beatles
+
+[phrase:3,8]
+Bus terminal
+Mr. meeseeks
+The avengers
+
+[phrase:3,9]
+Hot chocolate
+
+[phrase:3,10]
+Car dealership
+
+[phrase:3,11]
+Air conditioner
+
+[phrase:4,2]
+Blow up
+Give up
+Grow up
+Kung fu
+Wake up
+
+[phrase:4,3]
+Bean bag
+Bunk bed
+Corn dog
+Drum kit
+Game boy
+Hard hat
+Iron man
+Take off
+
+[phrase:4,4]
+Back pain
+Back seat
+Bear trap
+Bird bath
+Brad pitt
+Coca cola
+Crab cake
+Dish soap
+Door knob
+Duct tape
+Elon musk
+Exit ramp
+Fish bowl
+Fist bump
+Full moon
+Golf cart
+Golf club
+High five
+Hula hoop
+John cena
+Jump rope
+Junk food
+King kong
+Lava lamp
+Life buoy
+Lion king
+Loch ness
+Long coat
+Mona lisa
+Nail file
+Nose hair
+Nose ring
+Oven mitt
+Palm tree
+Pine cone
+Pine tree
+Seat belt
+Star sign
+Star wars
+Stop sign
+Swim ring
+
+[phrase:4,5]
+Bill gates
+Cell phone
+Fake teeth
+Fire alarm
+Fire truck
+Fist fight
+Glue stick
+Gold chain
+Gold ingot
+High heels
+High score
+Home alone
+Katy perry
+Lawn mower
+Mont blanc
+Pogo stick
+Shot glass
+Snow globe
+Snow white
+Suez canal
+Wine glass
+
+[phrase:4,6]
+Bell pepper
+Butt cheeks
+Nail polish
+Ring finger
+Sand castle
+Sock puppet
+Taxi driver
+Time travel
+
+[phrase:4,7]
+Bart Simpson
+Fast forward
+Fire hydrant
+Lisa simpson
+Pink panther
+Tech support
+Time machine
+
+[phrase:4,8]
+Rock climbing
+
+[phrase:4,10]
+Fred flintstone
+Mark zuckerberg
+
+[phrase:4,12]
+Fire extinguisher
+
+[phrase:5,2]
+Among us
+
+[phrase:5,3]
+Apple pie
+Bruce lee
+Fried egg
+Milky way
+North sea
+Paper bag
+Peppa pig
+Pizza hut
+Porky pig
+Price tag
+Stick man
+Stink bug
+Trash can
+Vault boy
+Water gun
+
+[phrase:5,4]
+Apple seed
+Black belt
+Black hole
+Brick wall
+Candy cane
+Cargo ship
+Chest hair
+Comic book
+Coral reef
+Daffy duck
+Death star
+Debit card
+Gamer girl
+Great wall
+Gummy bear
+Gummy worm
+James bond
+Magic wand
+Morse code
+North pole
+Piggy bank
+Polar bear
+Robin hood
+South park
+South pole
+Space suit
+Speed bump
+Teddy bear
+Trick shot?
+Usain bolt
+Video game
+
+[phrase:5,5]
+Angry birds
+Candy store
+Coast guard
+Crawl space
+Green beans
+Hello kitty
+Jerry mouse
+Magic trick
+Music notes
+North korea
+Outer space
+Paper plane
+Phone booth
+Photo frame
+Power plant
+Solar panel
+South korea
+Spray paint
+Storm drain
+Tooth fairy
+Watch tower
+Water cycle
+Water slide
+Water tower
+White house
+
+[phrase:5,6]
+Belly button
+Black Friday
+Black pepper
+Chuck norris
+Harry potter
+Isaac newton
+Machu picchu
+Onion powder
+Paint roller
+Sandy cheeks
+Solar system
+Sweet potato
+Table tennis
+Tower bridge
+Water bottle
+Water cooler
+
+[phrase:5,7]
+Fried chicken
+Green lantern
+Homer simpson
+Jimmy neutron
+Laser pointer
+Marge simpson
+Mount everest
+Snake charmer
+Train station
+Venus flytrap
+
+[phrase:5,8]
+Mount rushmore
+Prime meridian
+Susan wojcicki
+Zebra crossing
+
+[phrase:5,9]
+Crash bandicoot
+Queen elizabeth
+
+[phrase:6,2]
+Thumbs up
+
+[phrase:6,3]
+Boiled egg
+Bubble gum
+Cookie jar
+Family guy
+Flying car
+Flying pig
+Golden egg
+Guinea pig
+Litter box
+London eye
+Scooby doo
+Sports car
+Tissue box
+
+[phrase:6,4]
+Barbed wire
+Berlin wall
+Bottle flip
+Bubble wrap
+Burger king
+Carrot cake
+Coffee shop
+Credit card
+Dining room
+Donald duck
+Floppy disk
+Forest fire
+Jackie chan
+Mexico city
+Monkey bars
+Pencil case
+Pirate ship
+Safety clip
+Tuning fork
+Thumbs down
+Window sill
+Zodiac sign
+
+[phrase:6,5]
+Barack obama
+Broken heart
+Cheese stick
+Coffee maker
+Cotton candy
+Donald trump
+Easter bunny
+Eiffel tower
+Golden apple?
+Hockey stick
+Johnny bravo
+Lebron james
+Mickey mouse
+Pillow fight
+Social media
+Street light
+Toilet paper
+Wonder woman
+
+[phrase:6,6]
+Easter island
+Garlic powder
+Peanut butter
+Plague doctor
+Robbie rotten
+Rocket league
+Tennis racket
+
+[phrase:6,7]
+Bungee jumping
+Cherry blossom
+Cookie monster
+Fidget spinner
+Global warming
+Morgan freeman
+Roller coaster
+Sewing machine
+United kingdom
+
+[phrase:6,8]
+Mashed potatoes
+
+[phrase:6,9]
+Darwin watterson
+Flight attendant
+Pencil sharpener
+
+[phrase:6,10]
+George Washington
+
+[phrase:7,3]
+Ceiling fan
+Chewing gum
+Fishing net
+Fishing rod
+Machine gun
+
+[phrase:7,4]
+Clothes iron
+Crystal ball
+Playing card
+Utility pole
+Wishing well
+
+[phrase:7,5]
+Bowling alley
+Garbage truck
+Rocking chair
+Shaving cream
+Traffic light
+
+[phrase:7,6]
+Clothes hanger
+Grilled cheese
+Michael Jordan
+
+[phrase:7,7]
+Abraham lincoln
+Captain america
+Charlie chaplin
+Drivers license
+English channel
+Fitness trainer
+Reading glasses
+Stephen hawking
+Vending machine
+Virtual reality
+Washing machine
+William wallace
+
+[phrase:7,8]
+Fashion designer
+
+[phrase:7,9]
+Combine harvester
+
+[phrase:7,11]
+William shakespeare
+
+[phrase:8,3]
+Baseball bat
+Electric car
+Punching bag
+Watering can
+
+[phrase:8,4]
+Asteroid belt
+Business card
+Cinnamon roll
+Climbing wall
+Conveyor belt
+Graphics card
+Shooting star
+Shopping cart
+Swimming pool
+Wrecking ball
+
+[phrase:8,5]
+Angelina jolie
+Snowball fight
+Vladimir putin
+Steering wheel
+
+[phrase:8,6]
+Electric guitar
+Nintendo switch
+Northern lights
+Sherlock holmes
+
+[phrase:8,8]
+Drinking fountain
+Leonardo dicaprio
+Railroad crossing
+
+[phrase:9,4]
+Christmas tree
+Satellite dish
+Scrambled eggs
+
+[phrase:9,6]
+Christmas island
+
+[phrase:9,7]
+Lightning mcqueen
+
+[phrase:10,4]
+Retirement home
+
+[phrase:10,5]
+Demolition derby
+
+[phrase:10,6]
+Mechanical pencil
+Windshield wipers
+
+[phrase:10,8]
+Friendship bracelet
+
+[general]
+trip
+cobra
+bottle
+curtains
+soap
+mailman
+banana peel
+railroad
+back
+lipstick
+knee
+broccoli
+face
+tape
+hot dog
+shadow
+lawnmower
+table
+trash can
+rainbow
+hippopotamus
+soda
+laundry basket
+city
+match
+hill
+violin
+mailbox
+tire
+pumpkin
+zebra
+shelf
+eel
+beach
+salt and pepper
+ladder
+blue jeans
+address
+radish
+sea turtle
+dress
+lid
+family
+ladybug
+window
+cheeseburger
+yo-yo
+frog
+whistle
+glove
+magazine
+church
+chameleon
+boot
+tongue
+hospital
+thief
+smile
+potato
+hairbrush
+stork
+computer
+school
+heel
+pogo stick
+tent
+cucumber
+fox
+three-toed sloth
+sprinkler
+garden
+blowfish
+crib
+wing
+brain
+net
+song
+drums
+bagel
+baby
+starfish
+corner
+carpet
+bicycle
+strawberry
+horse
+rug
+puzzle
+snowball
+aircraft
+gate
+sidewalk
+pan
+marshmallow
+bell pepper
+watering can
+plate
+jungle
+camera
+forehead
+towel
+surfboard
+coin
+watch
+chin
+key
+blimp
+cowboy
+picture frame
+piano
+lake
+pirate
+box
+paw
+toast
+swimming pool
+silverware
+salt
+tissue
+shovel
+hoof
+dominoes
+roller blading
+base
+rose
+spider web
+hopscotch
+spoon
+elbow
+pinwheel
+french fries
+log
+doorknob
+bag
+attic
+beaver
+unicorn
+seahorse
+scar
+snowflake
+eraser
+jelly
+battery
+easel
+jar
+barn
+bathtub
+paperclip
+photograph
+maid
+ring
+outside
+vase
+electrical outlet
+room
+birthday cake
+map
+coconut
+spool
+chocolate chip cookie
+muffin
+ski
+stapler
+t-shirt
+lock
+braid
+seesaw
+half
+paper
+pizza
+dock
+shoulder
+lunchbox
+spring
+treasure
+queen
+fang
+round
+dragonfly
+newspaper
+mail
+knot
+tusk
+umbrella
+ticket
+lawn mower
+shark
+neck
+toothbrush
+hook
+wax
+mop
+beehive
+forest
+money
+napkin
+wreath
+music
+quilt
+chain
+backbone
+sheep
+banana split
+baseball
+basket
+printer
+cello
+circus
+whisk
+dimple
+hummingbird
+nest
+wrench
+fork
+garage
+stump
+pine tree
+saw
+stove
+toaster
+park
+hula hoop
+garbage
+peanut
+daddy longlegs
+hair
+bib
+spare
+light switch
+king
+headband
+America
+nature
+milk
+refrigerator
+mattress
+tennis
+popsicle
+stomach
+pajamas
+password
+nail
+stamp
+nut
+palace
+gingerbread man
+dog leash
+front porch
+wood
+mitten
+rhinoceros
+popcorn
+teeth
+stingray
+happy
+onion
+wall
+pen
+alarm clock
+door
+crayon
+swing
+maze
+jewelry
+golf
+gift
+bowtie
+fur
+gumball
+pear
+tiger
+peach
+washing machine
+doormat
+desk
+hockey
+crack
+cast
+flashlight
+dustpan
+scissors
+skate
+wallet
+sink
+coal
+brick
+hug
+doghouse
+deep
+pelican
+page
+lightsaber
+toe
+rake
+tulip
+torch
+teapot
+bucket
+trumpet
+paint
+hair dryer
+pineapple
+calendar
+pretzel
+candle
+sailboat
+storm
+tank
+volcano
+flute
+ironing board
+clam
+waist
+catfish
+top hat
+skirt
+astronaut
+rain
+button
+dollar
+spaceship
+fishing pole
+video camera
+penguin
+lemon
+poodle
+hip
+roof
+state
+claw
+clown
+rocking chair
+belt
+mini blinds
+airport
+cheetah
+spine
+pond
+cage
+mouse
+bomb
+ice
+cake
+cockroach
+batteries
+fist
+flamingo
+purse
+lighthouse
+manatee
+iPad
+telephone
+harp
+eagle
+electricity
+lobster
+cheek
+shallow
+suitcase
+campfire
+flagpole
+chalk
+artist
+skunk
+apple pie
+mushroom
+corndog
+smoke
+ship
+grill
+food
+cricket
+pencil
+TV
+rolly polly
+dolphin
+bathroom scale
+bubble
+porcupine
+owl
+stoplight
+chimney
+light bulb
+deer
+platypus
+globe
+tadpole
+cell phone
+river
+sunflower
+mouth

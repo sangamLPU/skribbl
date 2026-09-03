@@ -10,20 +10,29 @@ import { WordSelectionModal } from "@/components/WordSelectionModal";
 import { ChatPanel } from "@/components/ChatPanel";
 import { TimerDisplay } from "@/components/TimerDisplay";
 import { TurnResultOverlay } from "@/components/TurnResultOverlay";
+import { RoundResultOverlay } from "@/components/RoundResultOverlay";
 import { RoomSettingsPanel } from "@/components/RoomSettingsPanel";
 import { PlayerActionMenu } from "@/components/PlayerActionMenu";
+import { TurnResultPayload, ReactionTotals } from "shared";
+import { ThumbsUp, ThumbsDown } from "lucide-react";
 
 export default function RoomPage() {
   const params = useParams();
   const roomId = params.id as string;
   const router = useRouter();
   const { guestId, username, avatar } = useUserStore();
+  
   const [roomState, setRoomState] = useState<any>(null);
   const [error, setError] = useState("");
   const [wordHint, setWordHint] = useState("");
   const [secretWord, setSecretWord] = useState("");
   const [wordChoices, setWordChoices] = useState<string[]>([]);
   const [showMobilePlayers, setShowMobilePlayers] = useState(false);
+  
+  // Phase 2 Round/Turn Results
+  const [turnResult, setTurnResult] = useState<TurnResultPayload | null>(null);
+  const [reactionTotals, setReactionTotals] = useState<ReactionTotals | null>(null);
+  const [myReaction, setMyReaction] = useState<"like" | "dislike" | null>(null);
 
   useEffect(() => {
     if (!guestId || !username) {
@@ -36,7 +45,6 @@ export default function RoomPage() {
       socket.connect();
     }
 
-    // Pass guestId as auth for reconnection mapping
     socket.auth = { guestId };
 
     socket.emit("room:join", { roomId, guestId, username, avatar }, (res: any) => {
@@ -49,6 +57,12 @@ export default function RoomPage() {
 
     socket.on("room:state", (state) => {
       setRoomState(state);
+      // Reset reactions if phase goes to word selection
+      if (state.phase === "WORD_SELECTION") {
+        setReactionTotals(null);
+        setMyReaction(null);
+        setTurnResult(null);
+      }
     });
 
     socket.on("word:hint", (hint) => {
@@ -63,15 +77,19 @@ export default function RoomPage() {
       setWordChoices(choices);
     });
 
-    socket.on("turn:ended", () => {
-      // Clear choices when turn ends to reset UI for next time
+    socket.on("turn:ended", (payload: TurnResultPayload) => {
       setWordChoices([]);
       setSecretWord("");
+      setTurnResult(payload);
+    });
+    
+    socket.on("drawing:reactionUpdate", (payload: ReactionTotals) => {
+      setReactionTotals(payload);
     });
 
     socket.on("room:removed", (data: { reason: string }) => {
       setError(`You were ${data.reason} from this room.`);
-      socket.disconnect(); // Prevent auto-reconnect shenanigans
+      socket.disconnect();
     });
 
     return () => {
@@ -80,6 +98,7 @@ export default function RoomPage() {
       socket.off("word:secret");
       socket.off("word:choices");
       socket.off("turn:ended");
+      socket.off("drawing:reactionUpdate");
       socket.off("room:removed");
     };
   }, [roomId, guestId, username, avatar, router]);
@@ -92,6 +111,12 @@ export default function RoomPage() {
 
   const handleRestartMatch = () => {
     getSocket().emit("game:restart", { roomId, guestId });
+  };
+  
+  const handleReact = (type: "like" | "dislike") => {
+    const newReaction = myReaction === type ? null : type;
+    setMyReaction(newReaction);
+    getSocket().emit("drawing:reaction", { roomId, guestId, reaction: newReaction });
   };
 
   if (error) {
@@ -120,6 +145,8 @@ export default function RoomPage() {
   }
 
   const isHost = roomState.hostId === guestId;
+  const isDrawingOrResults = roomState.phase === "DRAWING" || roomState.phase === "TURN_RESULTS";
+  const amIDrawer = roomState.currentDrawerId === guestId;
 
   return (
     <div className="min-h-[100dvh] md:min-h-screen bg-gray-50 flex flex-col p-2 md:p-8">
@@ -157,7 +184,7 @@ export default function RoomPage() {
 
         {/* Middle Col: Lobby Settings & Game Area */}
         <div className="md:col-span-2 flex flex-col gap-6">
-          <div className="bg-white rounded-2xl shadow-sm border border-gray-200 p-6 text-center h-full">
+          <div className="bg-white rounded-2xl shadow-sm border border-gray-200 p-6 text-center h-full relative">
             {roomState.phase === "LOBBY" ? (
               <>
                 <h1 className="text-3xl font-black text-indigo-700 mb-2">Room Code: {roomId}</h1>
@@ -205,16 +232,17 @@ export default function RoomPage() {
                   </div>
                   <div className="flex items-center gap-2 md:gap-4">
                     <TimerDisplay endsAt={roomState.timerEndsAt} />
-                    <div className="text-lg md:text-2xl font-black tracking-widest text-gray-900">{roomState.currentDrawerId === guestId && secretWord ? secretWord.split('').join(' ') : wordHint}</div>
+                    <div className="text-lg md:text-2xl font-black tracking-widest text-gray-900">{amIDrawer && secretWord ? secretWord.split('').join(' ') : wordHint}</div>
                   </div>
                   <div className="font-bold text-indigo-900 text-sm md:text-base text-right">
-                    {roomState.currentDrawerId === guestId ? "You are drawing!" : "Guess the word!"}
+                    {amIDrawer ? "You are drawing!" : "Guess the word!"}
                   </div>
                 </div>
                 
                 {/* Canvas Area */}
                 <div className="flex-grow min-h-0 relative">
-                   {roomState.phase === "TURN_RESULTS" && <TurnResultOverlay />}
+                   {roomState.phase === "TURN_RESULTS" && <TurnResultOverlay turnResult={turnResult} />}
+                   {roomState.phase === "ROUND_RESULTS" && <RoundResultOverlay round={roomState.round} players={roomState.players} />}
                    
                    {roomState.phase === "GAME_RESULTS" && (
                      <div className="absolute inset-0 z-50 flex flex-col items-center justify-center bg-black/80 backdrop-blur-md rounded-2xl p-6">
@@ -241,10 +269,10 @@ export default function RoomPage() {
                         )}
                      </div>
                    )}
-                   {roomState.phase === "WORD_SELECTION" && roomState.currentDrawerId === guestId && (
+                   {roomState.phase === "WORD_SELECTION" && amIDrawer && (
                      <WordSelectionModal roomId={roomId} guestId={guestId!} choices={wordChoices} onSelected={() => setWordChoices([])} />
                    )}
-                   {roomState.phase === "WORD_SELECTION" && roomState.currentDrawerId !== guestId && (
+                   {roomState.phase === "WORD_SELECTION" && !amIDrawer && (
                      <div className="absolute inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm rounded-2xl">
                        <h2 className="text-2xl font-bold text-white">Drawer is choosing a word...</h2>
                      </div>
@@ -253,8 +281,43 @@ export default function RoomPage() {
                    <DrawingCanvas 
                      roomId={roomId}
                      guestId={guestId!}
-                     isDrawer={roomState.currentDrawerId === guestId && roomState.phase === "DRAWING"}
+                     isDrawer={amIDrawer && roomState.phase === "DRAWING"}
                    />
+
+                   {/* Floating Reactions UI */}
+                   {isDrawingOrResults && !amIDrawer && (
+                     <div className="absolute bottom-4 right-4 z-40 flex items-center gap-2 bg-white/90 backdrop-blur shadow-lg border border-gray-200 rounded-full p-2">
+                       <button
+                         onClick={() => handleReact("like")}
+                         className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full font-bold text-sm transition-colors ${myReaction === "like" ? "bg-indigo-100 text-indigo-700" : "text-gray-600 hover:bg-gray-100"}`}
+                       >
+                         <ThumbsUp size={18} className={myReaction === "like" ? "fill-current" : ""} />
+                         <span>{reactionTotals?.likes || 0}</span>
+                       </button>
+                       <div className="w-px h-5 bg-gray-300" />
+                       <button
+                         onClick={() => handleReact("dislike")}
+                         className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full font-bold text-sm transition-colors ${myReaction === "dislike" ? "bg-red-100 text-red-600" : "text-gray-600 hover:bg-gray-100"}`}
+                       >
+                         <ThumbsDown size={18} className={myReaction === "dislike" ? "fill-current" : ""} />
+                         <span>{reactionTotals?.dislikes || 0}</span>
+                       </button>
+                     </div>
+                   )}
+                   
+                   {/* Drawer Reaction View */}
+                   {isDrawingOrResults && amIDrawer && (
+                     <div className="absolute bottom-4 right-4 z-40 flex items-center gap-4 bg-white/90 backdrop-blur shadow-lg border border-gray-200 rounded-full px-4 py-2 pointer-events-none">
+                        <div className="flex items-center gap-1.5 font-bold text-sm text-indigo-700">
+                          <ThumbsUp size={18} className="fill-current" />
+                          <span>{reactionTotals?.likes || 0}</span>
+                        </div>
+                        <div className="flex items-center gap-1.5 font-bold text-sm text-red-600">
+                          <ThumbsDown size={18} className="fill-current" />
+                          <span>{reactionTotals?.dislikes || 0}</span>
+                        </div>
+                     </div>
+                   )}
                  </div>
               </div>
             )}
@@ -268,7 +331,7 @@ export default function RoomPage() {
               roomId={roomId} 
               guestId={guestId!} 
               username={username} 
-              isDrawer={roomState.currentDrawerId === guestId && (roomState.phase === "DRAWING" || roomState.phase === "WORD_SELECTION")}
+              isDrawer={amIDrawer && (roomState.phase === "DRAWING" || roomState.phase === "WORD_SELECTION")}
             />
           )}
         </div>

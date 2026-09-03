@@ -22,6 +22,11 @@ export class GameEngine {
   // Drawing state
   private drawOperations: DrawOperation[] = [];
 
+  // Round/Turn feedback state
+  private turnScores: Record<string, number> = {};
+  private currentReactions = { likes: new Set<string>(), dislikes: new Set<string>() };
+  private lastReactionTimes: Map<string, number> = new Map();
+
   constructor(room: Room, io: Server) {
     this.room = room;
     this.io = io;
@@ -129,6 +134,11 @@ export class GameEngine {
 
   private beginTurn() {
     this.drawOperations = []; // Reset drawing history
+    this.turnScores = {};
+    this.currentReactions.likes.clear();
+    this.currentReactions.dislikes.clear();
+    this.lastReactionTimes.clear();
+
     this.room.currentDrawerId = this.turnOrder[this.currentTurnIndex];
     this.transitionTo("WORD_SELECTION");
   }
@@ -204,7 +214,20 @@ export class GameEngine {
       const timeRemaining = Math.max(0, (this.room.timerEndsAt || 0) - Date.now());
       const maxTime = this.room.settings.drawTime * 1000;
       const score = Math.floor(100 + (400 * (timeRemaining / maxTime)));
+      
       player.score += score;
+      this.turnScores[playerId] = score;
+
+      // Drawer also gets some points per correct guess
+      const drawerId = this.room.currentDrawerId;
+      if (drawerId) {
+        const drawer = this.room.players.find(p => p.playerId === drawerId);
+        if (drawer) {
+          const drawerScore = 20;
+          drawer.score += drawerScore;
+          this.turnScores[drawerId] = (this.turnScores[drawerId] || 0) + drawerScore;
+        }
+      }
       
       // Check if everyone guessed correctly
       this.checkAllGuessed();
@@ -249,8 +272,23 @@ export class GameEngine {
     if (this.room.phase !== "DRAWING" && this.room.phase !== "WORD_SELECTION") return;
     this.clearHintTimers();
     
-    // Broadcast real word to everyone
-    this.io.to(this.room.id).emit("turn:ended", { secretWord: this.secretWord });
+    // Build TurnResult payload
+    const players = this.room.players.map(p => ({
+      playerId: p.playerId,
+      username: p.username,
+      scoreEarned: this.turnScores[p.playerId] || 0,
+      totalScore: p.score,
+      guessedCorrectly: p.hasGuessedCorrectly,
+    }));
+
+    // Broadcast real word and results to everyone
+    this.io.to(this.room.id).emit("turn:ended", {
+      turnId: this.turnId,
+      drawerId: this.room.currentDrawerId || "",
+      wordDisplay: this.secretWord,
+      players,
+    });
+    
     this.transitionTo("TURN_RESULTS");
   }
 
@@ -305,6 +343,39 @@ export class GameEngine {
   public clearDrawOperations() {
     if (this.room.phase !== "DRAWING") return;
     this.drawOperations = [];
+  }
+
+  public handleReaction(playerId: string, reaction: "like" | "dislike" | null) {
+    if (this.room.phase !== "DRAWING" && this.room.phase !== "TURN_RESULTS") return;
+    
+    // Drawer cannot react to their own drawing
+    if (playerId === this.room.currentDrawerId) return;
+    
+    // Check if player exists
+    if (!this.room.players.some(p => p.playerId === playerId)) return;
+    
+    // Rate limiting: max 1 change per 500ms
+    const now = Date.now();
+    const lastTime = this.lastReactionTimes.get(playerId) || 0;
+    if (now - lastTime < 500) return;
+    this.lastReactionTimes.set(playerId, now);
+    
+    // Remove existing
+    this.currentReactions.likes.delete(playerId);
+    this.currentReactions.dislikes.delete(playerId);
+    
+    if (reaction === "like") {
+      this.currentReactions.likes.add(playerId);
+    } else if (reaction === "dislike") {
+      this.currentReactions.dislikes.add(playerId);
+    }
+    
+    // Broadcast updated totals
+    this.io.to(this.room.id).emit("drawing:reactionUpdate", {
+      turnId: this.turnId,
+      likes: this.currentReactions.likes.size,
+      dislikes: this.currentReactions.dislikes.size
+    });
   }
 
   public getDrawSnapshot(): DrawOperation[] {
