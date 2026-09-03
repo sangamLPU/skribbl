@@ -72,6 +72,7 @@ export interface TurnResultPlayer {
   scoreEarned: number;
   totalScore: number;
   guessedCorrectly: boolean;
+  guessRank: number | null;
 }
 
 export interface TurnResultPayload {

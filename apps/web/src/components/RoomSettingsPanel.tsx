@@ -60,6 +60,18 @@ export function RoomSettingsPanel({ roomId, guestId, isHost, settings }: RoomSet
           </select>
         </div>
         <div>
+          <label className="block text-xs font-bold text-gray-700 mb-1">Hints</label>
+          <select 
+            disabled={!isHost}
+            value={localSettings.hints} 
+            onChange={(e) => handleChange("hints", parseInt(e.target.value))}
+            className="w-full bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-indigo-500 focus:border-indigo-500 p-2 disabled:opacity-50"
+          >
+            <option value={-1}>Automatic</option>
+            {[0, 1, 2, 3, 4].map(v => <option key={v} value={v}>{v}</option>)}
+          </select>
+        </div>
+        <div>
           <label className="block text-xs font-bold text-gray-700 mb-1">Max Players</label>
           <select 
             disabled={!isHost}

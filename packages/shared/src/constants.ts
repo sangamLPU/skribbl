@@ -3,7 +3,7 @@ export const DEFAULT_ROOM_SETTINGS = {
   rounds: 3,
   drawTime: 80,
   wordCount: 3,
-  hints: 2,
+  hints: -1,
   language: "en",
   customWordsOnly: false,
 };

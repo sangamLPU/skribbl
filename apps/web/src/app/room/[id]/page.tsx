@@ -7,6 +7,7 @@ import { getSocket } from "@/lib/socket";
 import { Avatar } from "@/components/Avatar";
 import { DrawingCanvas } from "@/components/DrawingCanvas";
 import { WordSelectionModal } from "@/components/WordSelectionModal";
+import { WordPatternRenderer } from "@/components/WordPatternRenderer";
 import { ChatPanel } from "@/components/ChatPanel";
 import { TimerDisplay } from "@/components/TimerDisplay";
 import { TurnResultOverlay } from "@/components/TurnResultOverlay";
@@ -230,9 +231,9 @@ export default function RoomPage() {
                       )}
                     </div>
                   </div>
-                  <div className="flex items-center gap-2 md:gap-4">
+                  <div className="flex items-center gap-2 md:gap-4 flex-grow justify-center px-4 overflow-hidden">
                     <TimerDisplay endsAt={roomState.timerEndsAt} />
-                    <div className="text-lg md:text-2xl font-black tracking-widest text-gray-900">{amIDrawer && secretWord ? secretWord.split('').join(' ') : wordHint}</div>
+                    <WordPatternRenderer pattern={amIDrawer && secretWord ? secretWord : wordHint} />
                   </div>
                   <div className="font-bold text-indigo-900 text-sm md:text-base text-right">
                     {amIDrawer ? "You are drawing!" : "Guess the word!"}
@@ -241,7 +242,7 @@ export default function RoomPage() {
                 
                 {/* Canvas Area */}
                 <div className="flex-grow min-h-0 relative">
-                   {roomState.phase === "TURN_RESULTS" && <TurnResultOverlay turnResult={turnResult} />}
+                   {roomState.phase === "TURN_RESULTS" && <TurnResultOverlay turnResult={turnResult} reactionTotals={reactionTotals} />}
                    {roomState.phase === "ROUND_RESULTS" && <RoundResultOverlay round={roomState.round} players={roomState.players} />}
                    
                    {roomState.phase === "GAME_RESULTS" && (
@@ -285,8 +286,8 @@ export default function RoomPage() {
                    />
 
                    {/* Floating Reactions UI */}
-                   {isDrawingOrResults && !amIDrawer && (
-                     <div className="absolute bottom-4 right-4 z-40 flex items-center gap-2 bg-white/90 backdrop-blur shadow-lg border border-gray-200 rounded-full p-2">
+                   {roomState.phase === "TURN_RESULTS" && !amIDrawer && (
+                     <div className="absolute bottom-4 right-4 z-50 flex items-center gap-2 bg-white/90 backdrop-blur shadow-lg border border-gray-200 rounded-full p-2">
                        <button
                          onClick={() => handleReact("like")}
                          className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full font-bold text-sm transition-colors ${myReaction === "like" ? "bg-indigo-100 text-indigo-700" : "text-gray-600 hover:bg-gray-100"}`}

@@ -20,6 +20,7 @@ class GameEngine {
     drawOperations = [];
     // Round/Turn feedback state
     turnScores = {};
+    correctGuessers = [];
     currentReactions = { likes: new Set(), dislikes: new Set() };
     lastReactionTimes = new Map();
     constructor(room, io) {
@@ -115,6 +116,7 @@ class GameEngine {
     beginTurn() {
         this.drawOperations = []; // Reset drawing history
         this.turnScores = {};
+        this.correctGuessers = [];
         this.currentReactions.likes.clear();
         this.currentReactions.dislikes.clear();
         this.lastReactionTimes.clear();
@@ -133,38 +135,112 @@ class GameEngine {
     }
     scheduleHints() {
         this.clearHintTimers();
-        const hintsCount = this.room.settings.hints;
-        if (hintsCount <= 0)
+        if (this.room.settings.hints === 0)
             return;
-        // We only hint characters that are currently hidden
-        const totalChars = this.secretWord.replace(/[^a-zA-Z0-9]/g, "").length;
-        const hintsToShow = Math.min(hintsCount, Math.floor(totalChars * 0.7)); // Max 70% revealed
-        if (hintsToShow <= 0)
+        // 1. Identify words and letters
+        const wordRegex = /[a-zA-Z0-9]+/g;
+        let match;
+        const words = [];
+        let totalLetters = 0;
+        while ((match = wordRegex.exec(this.secretWord)) !== null) {
+            const length = match[0].length;
+            const indices = [];
+            for (let i = 0; i < length; i++) {
+                indices.push(match.index + i);
+            }
+            words.push({ start: match.index, end: match.index + length - 1, length, indices });
+            totalLetters += length;
+        }
+        if (totalLetters === 0)
             return;
-        const interval = (this.room.settings.drawTime * 1000) / (hintsToShow + 1);
-        for (let i = 1; i <= hintsToShow; i++) {
+        // 2. Determine maxReveals based on rules
+        let maxReveals = 1;
+        if (totalLetters >= 15)
+            maxReveals = 7;
+        else if (totalLetters >= 13)
+            maxReveals = 6;
+        else if (totalLetters >= 11)
+            maxReveals = 5;
+        else if (totalLetters >= 9)
+            maxReveals = 4;
+        else if (totalLetters >= 7)
+            maxReveals = 3;
+        else if (totalLetters >= 5)
+            maxReveals = 2;
+        maxReveals = Math.min(maxReveals, Math.floor(totalLetters * 0.5));
+        if (maxReveals <= 0)
+            return;
+        // 3. Determine how many hints events we will have
+        let hintEvents = maxReveals;
+        if (this.room.settings.hints > 0) {
+            hintEvents = Math.min(this.room.settings.hints, maxReveals);
+        }
+        // 4. Distribute the `maxReveals` across the words fairly
+        const availableIndicesPerWord = words.map(w => {
+            const shuffled = [...w.indices];
+            for (let i = shuffled.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
+            }
+            return shuffled;
+        });
+        const chosenIndices = [];
+        let wordIdx = 0;
+        while (chosenIndices.length < maxReveals) {
+            let madeProgress = false;
+            for (let i = 0; i < availableIndicesPerWord.length; i++) {
+                const wIdx = (wordIdx + i) % availableIndicesPerWord.length;
+                const available = availableIndicesPerWord[wIdx];
+                // Ensure at least 1 letter remains hidden in this word
+                if (available.length > 1) {
+                    chosenIndices.push(available.pop());
+                    madeProgress = true;
+                    wordIdx = wIdx + 1;
+                    break; // move to next letter overall
+                }
+            }
+            if (!madeProgress)
+                break;
+        }
+        // Shuffle the final chosen indices
+        for (let i = chosenIndices.length - 1; i > 0; i--) {
+            const j = Math.floor(Math.random() * (i + 1));
+            [chosenIndices[i], chosenIndices[j]] = [chosenIndices[j], chosenIndices[i]];
+        }
+        if (chosenIndices.length === 0)
+            return;
+        hintEvents = Math.min(hintEvents, chosenIndices.length);
+        if (hintEvents === 0)
+            return;
+        // 5. Partition `chosenIndices` into `hintEvents` buckets
+        const chunks = Array.from({ length: hintEvents }, () => []);
+        for (let i = 0; i < chosenIndices.length; i++) {
+            chunks[i % hintEvents].push(chosenIndices[i]);
+        }
+        // 6. Schedule the hint events
+        const interval = (this.room.settings.drawTime * 1000) / (hintEvents + 1);
+        for (let i = 0; i < hintEvents; i++) {
             const hTurnId = this.turnId;
+            const indicesToReveal = chunks[i];
             const timer = setTimeout(() => {
                 if (this.turnId !== hTurnId)
                     return;
-                this.revealHint();
-            }, interval * i);
+                this.revealHint(indicesToReveal);
+            }, interval * (i + 1));
             this.hintTimers.push(timer);
         }
     }
-    revealHint() {
+    revealHint(indices) {
         if (this.room.phase !== "DRAWING")
             return;
-        // Find hidden indices
-        const hiddenIndices = [];
-        for (let i = 0; i < this.secretWord.length; i++) {
-            if (this.hiddenPattern[i] === "_")
-                hiddenIndices.push(i);
+        let changed = false;
+        for (const idx of indices) {
+            if (this.hiddenPattern[idx] === "_") {
+                this.hiddenPattern[idx] = this.secretWord[idx];
+                changed = true;
+            }
         }
-        if (hiddenIndices.length > 1) {
-            // Pick random
-            const randIdx = hiddenIndices[Math.floor(Math.random() * hiddenIndices.length)];
-            this.hiddenPattern[randIdx] = this.secretWord[randIdx];
+        if (changed) {
             this.io.to(this.room.id).emit("word:hint", this.hiddenPattern.join(" "));
         }
     }
@@ -182,22 +258,25 @@ class GameEngine {
         const normalizedSecret = this.secretWord.toLowerCase();
         if (normalizedGuess === normalizedSecret) {
             player.hasGuessedCorrectly = true;
+            this.correctGuessers.push(playerId);
+            const guessRank = this.correctGuessers.length;
             // Calculate score based on time remaining
             const timeRemaining = Math.max(0, (this.room.timerEndsAt || 0) - Date.now());
             const maxTime = this.room.settings.drawTime * 1000;
-            const score = Math.floor(100 + (400 * (timeRemaining / maxTime)));
-            player.score += score;
-            this.turnScores[playerId] = score;
-            // Drawer also gets some points per correct guess
-            const drawerId = this.room.currentDrawerId;
-            if (drawerId) {
-                const drawer = this.room.players.find(p => p.playerId === drawerId);
-                if (drawer) {
-                    const drawerScore = 20;
-                    drawer.score += drawerScore;
-                    this.turnScores[drawerId] = (this.turnScores[drawerId] || 0) + drawerScore;
-                }
-            }
+            const remainingTimeRatio = Math.max(0, Math.min(1, timeRemaining / maxTime));
+            const baseScore = 300;
+            const timeBonus = Math.floor(150 * remainingTimeRatio);
+            let placementBonus = 0;
+            if (guessRank === 1)
+                placementBonus = 50;
+            else if (guessRank === 2)
+                placementBonus = 30;
+            else if (guessRank === 3)
+                placementBonus = 15;
+            let scoreEarned = baseScore + timeBonus + placementBonus;
+            scoreEarned = Math.max(100, Math.min(500, scoreEarned));
+            player.score += scoreEarned;
+            this.turnScores[playerId] = scoreEarned;
             // Check if everyone guessed correctly
             this.checkAllGuessed();
             return true;
@@ -234,14 +313,31 @@ class GameEngine {
         if (this.room.phase !== "DRAWING" && this.room.phase !== "WORD_SELECTION")
             return;
         this.clearHintTimers();
+        // Assign drawer points
+        const drawerId = this.room.currentDrawerId;
+        if (drawerId && this.correctGuessers.length > 0) {
+            const drawer = this.room.players.find(p => p.playerId === drawerId);
+            if (drawer) {
+                const drawerScore = Math.min(300, this.correctGuessers.length * 75);
+                drawer.score += drawerScore;
+                this.turnScores[drawerId] = drawerScore;
+            }
+        }
         // Build TurnResult payload
-        const players = this.room.players.map(p => ({
-            playerId: p.playerId,
-            username: p.username,
-            scoreEarned: this.turnScores[p.playerId] || 0,
-            totalScore: p.score,
-            guessedCorrectly: p.hasGuessedCorrectly,
-        }));
+        const players = this.room.players.map(p => {
+            let guessRank = null;
+            if (p.hasGuessedCorrectly) {
+                guessRank = this.correctGuessers.indexOf(p.playerId) + 1;
+            }
+            return {
+                playerId: p.playerId,
+                username: p.username,
+                scoreEarned: this.turnScores[p.playerId] || 0,
+                totalScore: p.score,
+                guessedCorrectly: p.hasGuessedCorrectly,
+                guessRank,
+            };
+        });
         // Broadcast real word and results to everyone
         this.io.to(this.room.id).emit("turn:ended", {
             turnId: this.turnId,
